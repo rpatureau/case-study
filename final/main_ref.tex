@@ -1,0 +1,128 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage[protrusion=true, final]{microtype}
+\RequirePackage{graphicx}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{siunitx}
+\usepackage{amsmath}
+\usepackage[table]{xcolor}
+\usepackage[style=numeric-comp, maxnames=99, minnames=1, sorting=none]{biblatex}
+\addbibresource{citations.bib}
+\usepackage[colorlinks = true,
+linkcolor = blue,
+urlcolor  = blue,
+citecolor = blue,
+anchorcolor = blue,
+pdftitle={Exercise - Passivelogic},
+pdfauthor={Remi Patureau}]{hyperref}
+\usepackage[capitalize]{cleveref}
+
+% --- Document Content ---
+\begin{document}
+	
+	\section{Part A — Digital Twin (Core Physics)}
+	
+	\subsection{Task 1 — Thermal Model}
+	Build a physics-based thermal model of NovaCool. Your model should capture heat generation
+	from servers, airflow between hot and cold aisles, and the cooling effect of the CRAH units. A
+	lumped-parameter or reduced-order approach is preferred over CFD — we value clarity and speed
+	over spatial resolution.
+	\begin{itemize}
+	\item Model each rack as a heat source whose power draw varies with a provided workload trace
+	(CSV attached below).
+	\item Implement a simplified airflow model: cold air enters the cold aisle at a CRAH supply
+	temperature, absorbs heat as it passes through racks, and exits into the hot aisle.
+	\item Model CRAH behavior: each unit removes heat from the return air using a chilled-water loop
+	with a configurable flow rate and supply temperature.
+	\item Simulate at 1-minute time steps over a 24-hour period.
+	\item Produce time-series plots of: (a) average cold-aisle temperature, (b) average hot-aisle
+	temperature, (c) peak rack outlet temperature, and (d) total cooling power consumed.
+	\end{itemize}
+	\vspace{4pt}
+	
+	\subsection{Part A - Digital Twin (Tasks 1 \& 2)}
+	I model NovaCool as four CRAH zones, each serving 50 racks. Per minute the solver executes a rack energy balance ($Q = \dot{m} \cdot c_p \cdot \Delta T$), mixes rack outlets into a zone return, pushes the return through a CRAH that cools back to a commanded supply setpoint, and feeds the cold aisle with a first-order lag ($\tau = 2$ min) plus a small hot-air bypass term for imperfect containment ($3\%$). Per-rack mass flow is distributed inside a zone proportional to rack power, so loaded racks draw more air - a coarse surrogate for rack-fan back-pressure.
+	
+	The electrical path coupling adds: (i) quadratic UPS efficiency that peaks at $96.5\%$ around $65\%$ load, (ii) CRAH fan power under the affinity law $P \propto f^3$, (iii) chilled-water pump power linear in cooling duty, and (iv) a chiller with a COP of 4.8 that loses 0.08 per K of colder supply temperature and 0.05 per K above an ambient of $25^\circ\text{C}$. Facility power = UPS input + fans + pumps + chiller + a $1\%$ house load. PUE is computed from this breakdown at every step.
+	
+	On the provided 24 h trace (200 racks, 2-7 MW IT load) the baseline rollout with a $18^\circ\text{C}$ supply setpoint and $80\%$ fan speed produces the response below. The mean PUE is 1.34 and tracks the diurnal ambient cycle, but the peak rack outlet reaches $52^\circ\text{C}$ during the 13:00-16:00 peak, showing that the "design" setpoint is inadequate at full load - the control problem the case-study cares about.
+	
+	\begin{center}
+		\textit{[Placeholder for plots/baseline\_thermal\_power.png]} \\
+		\vspace{2pt}
+		\textit{[Placeholder for plots/baseline\_pue.png]}
+	\end{center}
+	
+	\subsection{Task 3 - Validation \& Calibration}
+	Running the uncalibrated twin against \texttt{sensor\_reference.csv} yields inlet RMSE $9.8^\circ\text{C}$ / outlet RMSE $15.1^\circ\text{C}$. The dominant error is a $+9.8^\circ\text{C}$ inlet bias - the reference facility is operated much colder (supply $\sim 8\text{--}9^\circ\text{C}$) than the configured $18^\circ\text{C}$ design point. A simple two-parameter grid search over supply setpoint ($7.5\text{--}12^\circ\text{C}$) and fan speed (0.6--1.0) selects $8.5^\circ\text{C}$ / $100\%$ fan as the best fit and collapses the errors to inlet $1.74^\circ\text{C}$ / outlet $4.40^\circ\text{C}$. The largest residual is centred on the 13:40 workload spike (per-minute MAE up to $7.5^\circ\text{C}$), driven by the rack-mass-flow model slightly underestimating air redistribution when a few racks hit 45 kW simultaneously - a smoother, load-following airflow term would close most of it.
+	
+	\begin{center}
+		\textit{[Placeholder for plots/validation\_calibrated.png]}
+	\end{center}
+	
+	Two concrete calibration upgrades I would apply next: 
+	(1) \textbf{Bayesian calibration} on the same parameters plus bypass fraction and rack-fan gain, using the reference data as a likelihood target and MCMC to recover posteriors that expose identifiability problems; 
+	(2) \textbf{online data assimilation} with an ensemble Kalman filter running against live inlet/outlet streams, letting the twin correct drift between full recalibrations.
+	
+	\subsection{Part B - Control \& Environment Design}
+	\textbf{Task 4 objective.} Maximise IT load served over 24 h, hard constraint $T_{outlet} \leq 40^\circ\text{C}$ at every rack and every minute, soft constraint: minimise cooling energy. Control levers used: per-CRAH supply-temperature setpoint and per-CRAH fan speed. Workload redistribution was left as a future stretch goal since all racks share the same CRAH zones and redistribution is a separate optimisation layer.
+	
+	I compare a no-control baseline (fixed $18^\circ\text{C}$ / $80\%$), a zone-local heuristic that proportionally drops the supply temperature and bumps fan speed as the hottest rack in the zone approaches the $40^\circ\text{C}$ wall, and a zone-local PID on the same peak-outlet error. Results on the full 24 h trace (same workload, equal IT load served):
+	
+	\vspace{4pt}
+	\begin{tabular}{lrrrrrr}
+		\hline
+		\rowcolor{lightgray} \textbf{Policy} & \textbf{IT MWh} & \textbf{Cool MWh} & \textbf{Total MWh} & \textbf{mean PUE} & \textbf{peak C} & \textbf{viol. min} \\ \hline
+		baseline & 108.9 & 28.0 & 144.2 & 1.339 & 52.5 & 796 \\
+		heuristic & 108.9 & 31.3 & 147.6 & 1.361 & 40.7 & 9 \\
+		PID & 108.9 & 31.0 & 147.3 & 1.360 & 39.6 & 0 \\ \hline
+	\end{tabular}
+	\vspace{6pt}
+	
+	Both controllers eliminate the thermal violations that dominate the baseline while consuming an extra 3.2 / 3.0 MWh of cooling energy respectively - a deliberate, small trade: the PUE penalty is $\sim 0.02$. The PID is slightly smoother (0 violations vs 9) because its derivative term pre-empts the peak; the heuristic is cheaper to reason about. Neither is "optimal" in any formal sense - they exist to frame the problem for a learned policy.
+	
+	\begin{center}
+		\textit{[Placeholder for plots/control\_comparison.png]}
+	\end{center}
+	
+	\subsection{Task 5 - RL-ready environment}
+	\textbf{API.} \texttt{DataCenterEnv} exposes \texttt{reset() -> obs} and \texttt{step(action) -> (obs, reward, done, info)}. I kept it free of a hard \texttt{gymnasium} dependency so it runs in minimal containers; porting to gymnasium is a one-import change and the Box-style spaces are already exposed as \texttt{low / high / shape}.
+	
+	\textbf{Observation.} A 20-dim float32 vector: per-zone cold-aisle temperature, return temperature, peak outlet temperature, zone power (MW), then total IT load, ambient temperature and a sin/cos cyclic encoding of time-of-day. Peak outlet per zone is the most informative single scalar for respecting the $40^\circ\text{C}$ wall, and the cyclic time encoding avoids the discontinuity a raw minute counter would introduce across episode resets.
+	
+	\textbf{Action.} An 8-dim Box: per-zone supply setpoint ($12\text{--}24^\circ\text{C}$) and per-zone fan-speed fraction (0.1--1.0). Continuous actions match PPO / SAC / TD3; discretising the setpoint in $0.5^\circ\text{C}$ steps would also work if the algorithm prefers it.
+	
+	\textbf{Reward.} $r_t = w_{IT} \cdot IT_{MW} - w_{pen} \cdot \max(0, T_{peak}-40)^2 - w_{eng} \cdot total_{MW} - w_{hot} \cdot \max(0, hot_{avg}-38)$, with default weights (1.0, 5.0, 0.15, 0.5). The quadratic safety penalty makes marginal violations visible without drowning the learning signal; the linear energy term is small enough to act as a tie-breaker (agents learn to respect safety first, then shave PUE). A sanity run shows a random policy at -2227 cumulative reward and the heuristic at +5147 - a wide margin, so the landscape is learnable and not pathological.
+	
+	\begin{center}
+		\textit{[Placeholder for plots/env\_rewards.png]}
+	\end{center}
+	
+	\textbf{Termination.} Episodes end at the end of the 24 h window, or early if any rack exceeds $45^\circ\text{C}$ (runaway territory the simulator can't recover in one step). Early termination gives the agent a clean signal that catastrophic violations are qualitatively different from marginal ones; leaving out early termination is a tuning knob if the agent learns to exploit it.
+	
+	\textbf{Reward shaping trade-offs.} A bigger safety penalty exponent (say cubic) would flatten the loss surface and slow learning for PPO; a sparser episode-end reward would be theoretically cleaner but has much worse credit assignment with 1440-step episodes. The shaped reward above is the compromise I'd actually hand to an RL engineer and tune from there.
+	
+	\subsection{Part C - Architecture \& Scaling}
+	\textbf{Modularity.} The codebase is split into orthogonal modules: \texttt{config.py} (parameters), \texttt{thermal.py}, \texttt{power.py}, \texttt{simulator.py} (coupler), \texttt{controllers.py}, \texttt{env.py}. Adding a humidity model or battery storage is a new module plus a few lines in the simulator to thread the new state through; no existing file changes. The config object is a single dataclass so new parameters land in one place and are immediately available to every module.
+	
+	\textbf{Scaling to 2,000 racks in under 5 minutes.} The current loop is pure NumPy with Python for-loops across CRAH zones (4 iterations / step). Three progressive steps: 
+	(1) vectorise the per-zone loop with \texttt{np.add.reduceat} so there are no Python loops inside a step - a 10x larger facility is still just larger arrays. 
+	(2) Move the per-step math into Numba or JAX (\texttt{jit} + \texttt{vmap}) to eliminate the Python interpreter overhead - gives another 5-20x. 
+	(3) Run RL rollouts in parallel over many seeds / workload variants using process-level parallelism (gymnasium \texttt{AsyncVectorEnv}) because the twin is embarrassingly parallel across episodes.
+	
+	\textbf{Online correction.} Wrap the simulator in a state-assimilation layer that, at every real-world telemetry tick, applies an ensemble Kalman filter update on the zone cold-aisle and return-air states using live inlet / outlet / PDU readings. Use the measurement noise to weight the correction. Periodically (nightly) recalibrate slow parameters (bypass fraction, chiller COP, rack-fan gain) via the same Bayesian pipeline used offline. Track a sim-vs-real error dashboard so drift triggers a recalibration automatically.
+	
+	\textbf{Testing.} The repo already ships a \texttt{tests/test\_basic.py} covering (i) energy-balance identity $Q = \dot{m} \cdot c_p \cdot \Delta T$, (ii) UPS efficiency peak location, (iii) PUE sanity bounds, (iv) env observation/action shapes, and (v) a "heuristic reduces violations vs baseline" regression check. For production I would add: property-based tests (\texttt{hypothesis}) for the thermal invariants, golden-master tests that lock a short trajectory against a previously saved CSV (catches silent numerics regressions), and benchmark tests that fail CI if a sim step gets slower by more than $20\%$.
+	
+	\textbf{Sim-to-real gap.} The likely sources in order of impact: 
+	(a) airflow distribution inside a zone - real CRAHs have non-uniform under-floor pressure fields that a lumped model can't capture; collect rack-level airflow data and fit a zone-to-rack mixing matrix. 
+	(b) rack-fan dynamics - today the model assumes instantaneous response; adding a first-order lag per rack closes most of it. 
+	(c) chiller plant behaviour, especially part-load COP and start/stop transients - replace the affine COP model with a manufacturer map and add sequencing logic. 
+	(d) sensor noise and calibration drift - inject Gaussian / bias noise to obs during training (domain randomisation) so the learned policy doesn't overfit to a clean world. Systematic reduction: validate each sub-system against its own reference data, then cross-validate the coupled system against whole-facility PUE traces.
+	
+\end{document}

@@ -1,0 +1,311 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage[protrusion=true, final]{microtype}
+\RequirePackage{graphicx}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{siunitx}
+\usepackage{amsmath}
+\usepackage[style=numeric-comp, maxnames=99, minnames=1, sorting=none]{biblatex}
+\addbibresource{citations.bib}
+\usepackage[colorlinks = true,
+linkcolor = blue,
+urlcolor  = blue,
+citecolor = blue,
+anchorcolor = blue,
+pdftitle={Exercise - Passivelogic},
+pdfauthor={Remi Patureau}]{hyperref}
+\usepackage[capitalize]{cleveref}
+
+
+\title{Case study}
+\author{Rémi Patureau}
+\date{}
+
+
+\begin{document}
+	\maketitle
+
+
+\section{Statement}
+
+Write a simple software simulation of the following system.
+
+Minimum Requirements:
+\begin{enumerate}[noitemsep,topsep=0pt]
+	\item The system should simulate the heat transfer from a solar panel to a storage tank
+	\item Use whichever coding language you wish
+	\item We will evaluate thermodynamic correctness, code approach, and results.
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\textwidth]{img/physics-simulator-coding-exercise}
+	\caption{Exercise diagram}
+	\label{fig:exercise}
+\end{figure}
+
+\section{Hypothesis}
+
+For dimensioning, I chose these hypotheses :
+\begin{itemize}[noitemsep,topsep=0pt]
+	\item The installation is for a a residential building
+	\item The storage tank is supposed to provide water for domestic hot water needs (DHW) for a family, therefore I estimate it is supposed to provide \qty{300}{\liter} of water at \qty{60}{\celsius} (the usual consumption for an household in the US is comprised between 202 and \qty{250}{\litre} per day \parencite{fuentes2018})
+	\item The solar panel is dimensioned to provide enough hot water to the storage tank over 24 hours during summer time
+\end{itemize} 
+
+\section{Modeling and models validation}
+
+The models used for this exercise are provided. The structure of the library is as follows:
+\begin{itemize}[noitemsep,topsep=0pt]
+	\item The models are in \textit{models}
+	\item The individual models are tested in \textit{Validation}
+	\item The global models are \textit{result} and \textit{result\_use}
+\end{itemize}
+
+\subsection{Overall aproach}
+
+The models are created within the Modelica language, using the \textit{standard Modelica library} \parencite{modelicalib}. 
+To ease the comprehension of the code and its evaluation, the models are not using external models from the Modelica library and/or the Buildings library. Therefore, fluid properties (\textit{Buildings.Media.Water}) and volume dynamics (\textit{Buildings.Fluid.MixingVolumes.MixingVolume}) are explicitly defined within the model rather than imported.
+
+The models were designed to be able to change the working fluid(s) and have the associated properties: the fluid density $\rho$ in \unit{\kilogram\per\cubic\meter}, the specific heat capacity $Cp$ in \unit{\joule\per\kilogram\per\kelvin}, and the thermal conductivity $\lambda$ in \unit{\watt\per\meter\per\kelvin}. 
+The fluid is water, we suppose the previously described properties remain constant, that is $\rho_{water}=\qty{995.586}{\kilogram\per\cubic\meter}$, $Cp_{water} = \qty{4184}{\joule\per\kilogram\per\kelvin}$ and $\lambda_{water} = \qty{0.6}{\watt\per\meter\per\kelvin}$.
+
+The individual models are validated against the models in the \textit{Buildings} library \parencite{WetterZuoNouiduiPang2014}.
+
+\subsection{Pump}
+
+\subsubsection{Model}
+
+The model is extracted from \parencite{patur2023}.
+
+The hydraulic power to deliver $P_{hyd}$ (\unit{\watt}) depends on the  pressure difference between the pump inlet and outlet $\Delta p$ (\unit{\pascal}), and the flow rate of the fluid $\dot{V}$ (\unit{\cubic\meter\per\second}). Therefore,
+
+\begin{equation}
+	P_{hyd} = \Delta p \, \dot{V} = \Delta p \, \rho \, \dot{m}
+	\label{eq:p_hydrau}
+\end{equation}
+
+where $\dot{m}$ in \unit{\kilogram\per\second}. The pressure difference is not calculated, and a mock value is used. It could be assessed taking into acount the length of the pipes and the difference of altitude (using Bernoulli's principle).
+
+All the electric power  $P_{ele}$ is not turned into hydraulic power, the hydraulic efficiency $\eta_{hyd}$ and the motor efficiency $\eta_{ele}$ are taken into account.is not tranme losses are to be accounted to calculate $P_{ele}$. 
+
+\begin{equation}
+	P_{ele} = \frac{P_{hyd}}{\eta_{ele} \, \eta_{hyd}}
+\end{equation}
+
+
+\subsubsection{Validation}
+
+The model is validated against the \textit{Buildings} model \textit{Buildings.Fluid.Movers.FlowControlled\_m\_flow} in \textit{exercise.Validation.pump}. For the same inputs, we obtain the same output.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{img/pump}
+	\caption{Model \textit{exercise.Validation.pump} - In red, model from \textit{Buildings} library, in blue, model developped for the exercise}
+	\label{fig:pump}
+\end{figure}
+
+
+\subsection{Storage tank}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{img/tank_model}
+	\caption{Schematic of the storage tank model, in \textit{exercise.models.tank} }
+	\label{fig:tank_model}
+\end{figure}
+
+This model is partly extracted from \parencite{patur2023}.
+
+\subsubsection{Model}
+
+The storage tank is stratified into $n_{seg}$ volumes. Conduction is modeled between the different volumes of the storage tank and between each of these volumes and the outside. We take into account the cross-sectional area. The storage tank is assumed to be cylindrical in shape. The model can be used to calculate the temperature at any point in the storage tank and the initial water temperature $\qty{40}{\celsius}$. The wall thickness, which is assumed to be the same as that of the insulation, is \SI{15}{\centi\meter} (following the recommendations from \parencite{energieplus}). The volume, \qty{300}{\litre}, allows to provide the DHW needs of an household. The ambient temperature $T_{ext}$ is supposed to be \qty{20}{\celsius}.
+
+Thermal conductance between water layers \textit{i} (\unit{\watt\per\kelvin}) is:
+
+\begin{equation}
+	G_{vol} = \frac{\lambda_{wat}}{h_i} \, S
+\end{equation}
+
+with S the area of the layer (\unit{\metre\squared}) ($S = \frac{V_{storage}}{Heigth_{storage}}$) and $h_i$ the heigth of a layer.
+
+Thermal conductance through the wall to ambient is, for each layer:
+
+\begin{equation}
+	G_{ext} = \frac{2\pi \, h_i \, \lambda_{tank}}{\ln\left(\frac{r_{tank}+t_{tank}}{r_{tank}} \right)}
+\end{equation}
+
+with $r_{tank}$ the radius of the storage, $t_{tank}$ the thickness of the tank and $\lambda_{tank}$ the thermal conductivity of the wall.
+
+At the top and the bottom of the tank, we also calculate the thermal conductance through the wall to ambient:
+
+\begin{equation}
+	G_{TopBottom} = \frac{S}{t_{tank}} \, \lambda_{tank}
+\end{equation}
+
+For each layer $i$, the temperature can be calculated:
+
+\begin{equation}
+	\begin{aligned}
+		\forall\ i \in [2, n_{seg-1}], \\
+		V_{seg} \, \rho_{wat} \, Cp_{wat} \, \frac{dT_i}{dt} = & G_{ext} \, (T_{ext} - T_i) \\
+		& - G_{vol} \, (T_i-T_{i-1}) + G_{vol} \, (T_{i+1}-T_{i}) \\
+		& + \dot{m}_{wat,cold} \, Cp_{wat} \, (T_{i-1} - T_{i}) + \dot{m}_{wat,hot} \, Cp_{wat} \, (T_{i+1} - T_{i})\\
+	\end{aligned}
+\end{equation}
+
+\begin{equation}
+	\begin{aligned}
+		V_{seg} \, \rho_{wat} \, Cp_{wat} \, \frac{dT_1}{dt} = & G_{ext} \, (T_{ext} - T_1) + G_{TopBottom} \, (T_{ext} - T_1) \\
+		&  + G_{vol} \, (T_{2}-T_{1}) \\
+		& + \dot{m}_{wat,cold} \, Cp_{wat} \, (T_{wat,cold} - T_{1}) + \dot{m}_{wat,hot} \, Cp_{wat} \, (T_{2} - T_{1})\\
+	\end{aligned}
+\end{equation}
+
+\begin{equation}
+		\begin{aligned}
+		V_{seg} \, \rho_{wat} \, Cp_{wat} \, \frac{dT_{n\_seg}}{dt} = & G_{ext} \, (T_{ext} - T_{n\_seg}) \\
+		& - G_{vol} \, (T_{n\_seg}-T_{n\_seg-1}) \\
+		& + \dot{m}_{wat,cold} \, Cp_{wat} \, (T_{n\_seg-1} - T_{n\_seg}) \\
+		& + \dot{m}_{wat,hot} \, Cp_{wat} \, (T_{wat,hot} - T_{n\_seg})\\
+	\end{aligned}
+\end{equation}
+
+\subsubsection{Validation of the model behavior}
+
+The model is at an initial temperature of \qty{40}{\celsius}. The test consists in injecting hot water (\qty{60}{\celsius}) for an hour at 10AM, and injecting cold water (\qty{20}{\celsius}) for an hour at 8PM. As shown in \cref{fig:tank_24h}, the overall behavior is consistent with what we expect: at the beginning, the temperature decreases, due to the exchange with the ambient conditions, then the temperature within the tank increases and reaches the input temperature, we can notice that the temperature losses within the tank increase (the difference between the ambient temperature and the temperature of the tank is higher), and when cold water is injected, the temperature of the volumes within the tank decrease.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{img/tank_24h}
+	\caption{Evolution of the temperature in the tank at the top and the bottom during 24 hours}
+	\label{fig:tank_24h}
+\end{figure}
+
+The dynamic behavior of the volumes follows what is expected, as shown in \cref{fig:tank_1h}: when hot water is injected at the top of the tank, the top layer reacts the fastest, while the mixing of temperatures slows the increase of temperatures from the bottom, when cold water is injected the opposite behavior happens. 
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{img/tank_finer}
+	\caption{Evolution of the temperature in the tank at the top and the bottom when injecting hot water at the top of the tank (left) and cold water at the bottom of the tank (right)}
+	\label{fig:tank_1h}
+\end{figure}
+
+
+\subsubsection{Comparison with models from \textit{Buildings}}
+
+The model is different from \textit{Buildings.Fluid.Storage.Stratified}. We are using first order equations, whereas the model in \textit{Buildings} uses second order equations. In \cref{fig:tank_24href}, we see that the difference between the temperature at the top and the bottom of the tank is higher than in our model.
+ 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{img/tank_24href}
+	\caption{Evolution of the temperature in the tank at the top and the bottom during 24 hours - \textit{Buildings} library}
+	\label{fig:tank_24href}
+\end{figure}
+
+
+\subsection{Solar panel}
+
+\subsubsection{Model}
+
+The model is inspired from \textit{Buildings.Fluid.SolarCollectors.ASHRAE93}, that follows ASHRAE standard 93 \parencite{ashrae}.
+Different models exist, for example \parencite{Hernandez,Fontanella}. The model consists in taking into account solar gains (\unit{\watt}), that depend and different parameters including inclination, azimut, and tilt, and heat losses to the environment (\unit{\watt}).
+
+I didn't develop the models for the solar gains and the solar losses, but created a simplified model with different layers to represent the evolution of the temperature within the solar collector. This model uses as input weather files available on \textit{EnergyPlus} website. For the study case, I used a weather file form Salt Lake City \parencite{epluswea}. The solar collector is oriented to the south, with a \qty{30}{\degree} inclination.
+
+\begin{equation}
+	\begin{aligned}
+		\forall\ i \in [1, n_{seg}], \\
+		\frac{CTot}{i} \, \frac{dT[i]}{dt} = & \dot{m} \, Cp \, (T[i - 1] - T[i]) + SolarGains[i] + SolarLosses[i]
+	\end{aligned}
+\end{equation}
+
+Where $CTot$ is the total heat capacity of the solar collector (\unit{\joule\per\kelvin}).
+To be noted, the model has its own safety measures, that prevents the gains or the losses to lead to excessive temperatures.
+
+\subsubsection{Validation}
+
+The model uses the same equations as \textit{Buildings.Fluid.SolarCollectors.ASHRAE93}, therefore the temperatures are the same in the two models.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{img/solar}
+	\caption{Evolution of the temperatures entering and leaving the solar collector during 24 hours}
+	\label{fig:solar}
+\end{figure}
+
+\section{Control strategy}
+
+The control ensures the solar collector delivers heating to the storage only if the temperature leaving the solar collector is superior to \qty{60}{\celsius}. This is a requirement as water in a storage must be superior to a certain threshold to prevent legionella. To achieve that, I implemented a PID controller (from \textit{Buildings.Controls.Continuous.LimPID}).
+ 
+ 
+\section{Results}
+
+\subsection{Global model}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{img/result_model}
+	\caption{Model \textit{exercise.result} including the different models developped: in blue, the pump, in red, the solar collector, in green, the storage tank, in red yellow, the weather file reader (in \textit{Buildings}), and in black, the PID controller}
+	\label{fig:result_model}
+\end{figure}
+
+The schematic of the model is shown in \cref{fig:result_model}.
+
+With the current settings, the temperature at the top of the storage, that can be supplied to the household, is shown in \cref{fig:res_tank_nouse}:
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{img/res_tank_nouse}
+	\caption{Temperature at the top layer of the storage tank per hour over the year}
+	\label{fig:res_tank_nouse}
+\end{figure}
+
+If we take into account the threshold of \qty{60}{\celsius}, this temperature is achieved \qty{99}{\%} of the day (not achieved for less than \qty{15}{\minute}) during 214 days.
+
+\subsection{Improvement to the model}
+
+The model has currently no supply of hot water to the household. A better model includes such supply. Based on \parencite{annex42}, I estimated the share of supply for DHW per hour as follows, see \cref{fig:share_dhw}:
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.6\textwidth]{img/share_dhw}
+	\caption{Hourly share of the daily consumption of DHW for a household}
+	\label{fig:share_dhw}
+\end{figure}
+
+We get a more accurate profile of tank temperature (still at the top layer) as we can observe the solar collector seems sufficient in summer but not during winter, when there is less solar energy, see \cref{fig:res_tank_withuse}:
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.6\textwidth]{img/res_tank_withuse}
+	\caption{Temperature at the top layer of the storage tank per hour over the year}
+	\label{fig:res_tank_withuse}
+\end{figure}
+
+\section{Conclusions and next steps}
+
+In this study, I developped the models, verifying their thermodynamic correctness, and the control logic associated with the Modelica language to model the heat transfer from a solar panel to a storage tank. I implemented them from first principles rather than relying on external libraries or pre-defined media packages included either in Modelica Standard library or Buildings. This involved manually defining thermodynamic properties and heat transfer equations to verify the thermodynamic consistency of the system.
+
+To go further in the analysis, it could be interesting:
+\begin{itemize}[noitemsep,topsep=0pt]
+	\item To use a different circuit for the solar collector loop, with a storage tank that includes an internal heat exchanger. Those layouts seem to be the most common. A node was created in the model for this purpose.
+	\item To include a heater to the tank model, that would allow the tank to perform all year long.
+	\item To proceed with a techno-economic study. I selected a surface for the solar collector only for the demonstraction, making sure the energy would allow to use the tank most of the year. A further development could focus on the optimal surface to use.
+	\item To model the pressure drop to have a more precise estimation of electric power associated to the pump.
+\end{itemize}
+
+
+
+\newpage
+
+\section*{References}
+
+\printbibliography[heading=none]
+
+\end{document}
