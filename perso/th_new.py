@@ -197,9 +197,11 @@ plt.savefig(r'C:\drive\CV_US\Hammerhead\case study\final\plots\task3.pdf', bbox_
 plt.show()
 
 plt.figure()
-plt.plot(time_h, ref_m_flow.mean(axis=1))
-plt.plot(time_h, sim_m_flow)
+plt.plot(time_h, ref_m_flow.mean(axis=1), label='Reference')
+plt.plot(time_h, sim_m_flow, label = 'Simulation')
 plt.margins(x=0)
+plt.title('Average mass flow rate')
+plt.savefig(r'C:\drive\CV_US\Hammerhead\case study\final\plots\avgmf.pdf', bbox_inches='tight')
 plt.show()
 
 
@@ -207,12 +209,16 @@ plt.figure()
 plt.plot(time_h, ref_inlet.mean(axis=1))
 plt.plot(time_h, sim_inlet.mean(axis=1))
 plt.margins(x=0)
+plt.title('Average Inlet temperatures')
+plt.savefig(r'C:\drive\CV_US\Hammerhead\case study\final\plots\avgin.pdf', bbox_inches='tight')
 plt.show()
 
 plt.figure()
 plt.plot(time_h, ref_outlet.mean(axis=1))
 plt.plot(time_h, sim_outlet.mean(axis=1))
 plt.margins(x=0)
+plt.title('Average outlet temperatures')
+plt.savefig(r'C:\drive\CV_US\Hammerhead\case study\final\plots\avgout.pdf', bbox_inches='tight')
 plt.show()
 
 
