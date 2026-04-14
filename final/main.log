@@ -1,4 +1,4 @@
-This is LuaHBTeX, Version 1.15.0 (TeX Live 2022)  (format=lualatex 2022.4.24)  14 APR 2026 10:17
+This is LuaHBTeX, Version 1.15.0 (TeX Live 2022)  (format=lualatex 2022.4.24)  14 APR 2026 11:52
  restricted system commands enabled.
 **main.tex
 (./main.tex
@@ -1023,24 +1023,23 @@ File: plots/task3.pdf Graphic file (type pdf)
 Package luatex.def Info: plots/task3.pdf  used on input line 165.
 (luatex.def)             Requested size: 469.75502pt x 156.8442pt.
  [3<./plots/task2.pdf>]
-<plots/avgmf.pdf, id=197, 371.49416pt x 263.70018pt>
+<plots/avgmf.pdf, id=197, 371.49416pt x 286.13136pt>
 File: plots/avgmf.pdf Graphic file (type pdf)
 <use plots/avgmf.pdf>
 Package luatex.def Info: plots/avgmf.pdf  used on input line 177.
-(luatex.def)             Requested size: 469.75502pt x 333.47108pt.
-<plots/avgin.pdf, id=198, 377.07751pt x 263.55904pt>
+(luatex.def)             Requested size: 328.82707pt x 253.2808pt.
+<plots/avgin.pdf, id=198, 377.07751pt x 286.13136pt>
 File: plots/avgin.pdf Graphic file (type pdf)
 <use plots/avgin.pdf>
 Package luatex.def Info: plots/avgin.pdf  used on input line 184.
-(luatex.def)             Requested size: 469.75502pt x 328.34607pt.
+(luatex.def)             Requested size: 328.82707pt x 249.52603pt.
  [4<./plots/task3.pdf><./plots/avgmf.pdf>]
-<plots/avgout.pdf, id=290, 368.70247pt x 263.55904pt>
+<plots/avgout.pdf, id=300, 368.70247pt x 286.13136pt>
 File: plots/avgout.pdf Graphic file (type pdf)
 <use plots/avgout.pdf>
 Package luatex.def Info: plots/avgout.pdf  used on input line 191.
-(luatex.def)             Requested size: 469.75502pt x 335.8061pt.
- [5<./plots/avgin.pdf>]
-[6<./plots/avgout.pdf>] [7] [8] (./main.aux)
+(luatex.def)             Requested size: 328.82707pt x 255.19312pt.
+ [5<./plots/avgin.pdf><./plots/avgout.pdf>] [6] [7] (./main.aux)
 
 LaTeX Warning: There were undefined references.
 
@@ -1057,25 +1056,25 @@ Package logreq Info: Writing requests to 'main.run.xml'.
 )
 
 Here is how much of LuaTeX's memory you used:
- 28568 strings out of 477760
+ 28567 strings out of 477760
  125039,1648299 words of node,token memory allocated
  671 words of node memory still in use:
    7 hlist, 2 vlist, 2 rule, 1 local_par, 4 glue, 4 kern, 1 penalty, 3 glyph, 25
  attribute, 65 glue_spec, 25 attribute_list, 1 write nodes
-   avail lists: 1:2,2:474,3:274,4:118,5:338,6:59,7:6583,8:62,9:515,10:5,11:433
+   avail lists: 1:2,2:474,3:274,4:118,5:338,6:59,7:6583,8:62,9:515,10:7,11:400
  48522 multiletter control sequences out of 65536+600000
  51 fonts using 10953839 bytes
- 72i,7n,84p,1000b,901s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 72i,7n,84p,1000b,898s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Windows/Fonts/timesbd.ttf><c:/Windows/Fonts/times.ttf><c:/texlive/2022/texmf
 -dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2022/texmf-dist/font
 s/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/pub
 lic/amsfonts/cm/cmr10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/amsfont
 s/cm/cmr8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.
 pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on main.pdf (8 pages, 358949 bytes).
+Output written on main.pdf (7 pages, 367914 bytes).
 
-PDF statistics: 410 PDF objects out of 1000 (max. 8388607)
- 184 compressed objects within 2 object streams
- 38 named destinations out of 1000 (max. 131072)
+PDF statistics: 436 PDF objects out of 1000 (max. 8388607)
+ 181 compressed objects within 2 object streams
+ 37 named destinations out of 1000 (max. 131072)
  113 words of extra memory for PDF output out of 10000 (max. 100000000)
 

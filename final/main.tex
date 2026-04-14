@@ -136,7 +136,7 @@ Here the COP is considered constant for this example. It should be approximated 
 \subsection{PUE}
 
 \begin{equation}
-PUE = (P_UPS_input + P_fans + P_pumps + P_chiller + P_other) / P_IT
+PUE = (P_UPS_input + P_{fans} + P_{pumps} + P_{chiller} + P_{other}) / P_IT
 \end{equation}
 
 A small overhead (1\% of capacity) covers lights, security, and networking.
@@ -163,33 +163,33 @@ NovaCool. Compare your simulation outputs against this reference.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=\textwidth]{plots/task3}
-	\caption{Thermal Model}
+	\caption{Temperature differences over 24h}
 	\label{fig:task3}
 \end{figure}
 
-Inlet  — RMSE: 0.78 °C  MAE: 0.62 °C  MaxAE: 3.36 °C
+Inlet  — RMSE: 0.78 °C  MAE: 0.62 °C  MaxAE: 3.36 °C\\
 Outlet — RMSE: 5.31 °C  MAE: 4.00 °C  MaxAE: 16.35 °C
 
 Comparing the mass flow rate, we obtain similar results:
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=\textwidth]{plots/avgmf}
-	\caption{Thermal Model}
+	\includegraphics[width=0.7\textwidth]{plots/avgmf}
+	\caption{Mass flow rate difference over 24h}
 	\label{fig:avgmf}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=\textwidth]{plots/avgin}
-	\caption{Thermal Model}
+	\includegraphics[width=0.7\textwidth]{plots/avgin}
+	\caption{Inlet reference and simulated temperatures over 24h}
 	\label{fig:avgin}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=\textwidth]{plots/avgout}
-	\caption{Thermal Model}
+	\includegraphics[width=0.7\textwidth]{plots/avgout}
+	\caption{Outlet reference and simulated temperatures over 24h}
 	\label{fig:avgout}
 \end{figure}
 
