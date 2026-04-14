@@ -1,4 +1,4 @@
-This is LuaHBTeX, Version 1.15.0 (TeX Live 2022)  (format=lualatex 2022.4.24)  14 APR 2026 09:39
+This is LuaHBTeX, Version 1.15.0 (TeX Live 2022)  (format=lualatex 2022.4.24)  14 APR 2026 09:49
  restricted system commands enabled.
 **main.tex
 (./main.tex
@@ -1049,7 +1049,7 @@ s/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/pub
 lic/amsfonts/cm/cmr10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/amsfont
 s/cm/cmr8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.
 pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on main.pdf (5 pages, 243866 bytes).
+Output written on main.pdf (5 pages, 243738 bytes).
 
 PDF statistics: 241 PDF objects out of 1000 (max. 8388607)
  133 compressed objects within 2 object streams
